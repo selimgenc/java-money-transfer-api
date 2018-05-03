@@ -12,8 +12,8 @@ import com.revolut.bank.domain.transaction.Transaction;
 import com.revolut.bank.domain.transaction.TransactionRepository;
 
 import javax.annotation.PostConstruct;
+import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
-import javax.inject.Singleton;
 import javax.json.Json;
 import javax.json.JsonObject;
 import javax.ws.rs.*;
@@ -27,7 +27,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Path("/v1/transaction")
-@Singleton
+@ApplicationScoped
 @Produces(MediaType.APPLICATION_JSON)
 public class TransactionResource {
     @Inject

@@ -2,7 +2,8 @@ package com.revolut.bank.api.util;
 
 import com.revolut.bank.api.account.AccountResource;
 import com.revolut.bank.api.transaction.TransactionResource;
-import javax.inject.Singleton;
+
+import javax.enterprise.context.ApplicationScoped;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.container.ResourceContext;
@@ -11,7 +12,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriInfo;
 import java.net.URI;
 
-@Singleton
+@ApplicationScoped
 @Path("hateos")
 @Produces(MediaType.APPLICATION_JSON)
 public class HateosResource {

@@ -10,8 +10,8 @@ import com.revolut.bank.domain.account.Account;
 import com.revolut.bank.domain.account.AccountRepository;
 import com.revolut.bank.domain.handling.DomainException;
 
+import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
-import javax.inject.Singleton;
 import javax.json.Json;
 import javax.json.JsonObject;
 import javax.ws.rs.*;
@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-@Singleton
+@ApplicationScoped
 @Path("/v1/account")
 public class AccountResource {
 
