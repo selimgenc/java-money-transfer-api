@@ -5,8 +5,8 @@ import com.revolut.bank.api.exception.ApiException;
 import com.revolut.bank.api.transaction.dto.TransactionDto;
 import com.revolut.bank.api.util.ApiLogger;
 import com.revolut.bank.api.util.HateosResource;
+import com.revolut.bank.application.AccountService;
 import com.revolut.bank.application.TransactionService;
-import com.revolut.bank.domain.account.AccountRepository;
 import com.revolut.bank.domain.handling.DomainException;
 import com.revolut.bank.domain.transaction.Transaction;
 import com.revolut.bank.domain.transaction.TransactionRepository;
@@ -37,15 +37,17 @@ public class TransactionResource {
     private TransactionService transactionService;
 
     @Inject
-    private AccountRepository accountRepository;
+    private AccountService accountService;
 
     @Context
     private UriInfo uriInfo;
 
     @PostConstruct // for testing
     public void init() throws DomainException {
-        transactionService.transfer("account1", "account2", new BigDecimal(2), "ss", "TEst");
-        transactionService.transfer("account2", "account1", new BigDecimal(5), "bb", "Test 2");
+        String accountNo1 = accountService.createNewAccount("Customer-1", new BigDecimal(100), "api");
+        String accountNo2 = accountService.createNewAccount("Customer-2", new BigDecimal(100), "api");
+        transactionService.transfer(accountNo1, accountNo2, new BigDecimal(2), "ss");
+        transactionService.transfer(accountNo2, accountNo1, new BigDecimal(5), "bb");
 
     }
 
@@ -53,11 +55,16 @@ public class TransactionResource {
     @Path("/{transactionNumber}")
     @Produces(MediaType.APPLICATION_JSON)
     public void getTransferByNumber(@Suspended final AsyncResponse asyncResponse, @PathParam("transactionNumber") String transactionNumber) {
+        List<Transaction> all = transactionRepository.getAll();
+        Optional<Transaction> first = all.stream().filter(t -> t.getTransactionNo().equalsIgnoreCase(transactionNumber)).findFirst();
+        if(first != null){
+            System.out.println(first);
+        }
         Optional<Transaction> optionalTransaction = transactionRepository.getTransactionById(transactionNumber);
         if(!optionalTransaction.isPresent()){
             throw new ApiException(new ApiErrorMessage("ERR-TR-01", "The Required Transfer not found", null, Response.Status.NOT_FOUND));
         }
-        TransactionDto transactionDto = TransactionDto.cretaFromEntity(optionalTransaction.get());
+        TransactionDto transactionDto = TransactionDto.buildFromEntity(optionalTransaction.get());
 
         URI selfUri = HateosResource.createTransactionUri(transactionDto.getTransactionNumber(), uriInfo);
         URI fromUri = HateosResource.createAccountUri(transactionDto.getFrom(), uriInfo);
@@ -81,7 +88,7 @@ public class TransactionResource {
             return;
         }
         List<JsonObject> objects = transactions.stream()
-                .map(TransactionDto::cretaFromEntity)
+                .map(TransactionDto::buildFromEntity)
                 .map(dto -> asJsonObject(dto, HateosResource.createTransactionUri(dto.getTransactionNumber(), uriInfo),
                         HateosResource.createAccountUri(dto.getFrom(), uriInfo),
                         HateosResource.createAccountUri(dto.getTo(), uriInfo)
@@ -96,9 +103,7 @@ public class TransactionResource {
     public void createTransfer(@Suspended final AsyncResponse asyncResponse, TransactionDto dto, @Context HttpHeaders headers) throws DomainException {
         MultivaluedMap<String, String> requestHeaders = headers.getRequestHeaders();
         String user = requestHeaders.getFirst("user");
-        String locaiton= requestHeaders.getFirst("location");
-
-        String transactionNumber = transactionService.transfer(dto.getFrom(), dto.getTo(), dto.getAmount(), user, locaiton);
+        String transactionNumber = transactionService.transfer(dto.getFrom(), dto.getTo(), dto.getAmount(), user);
         URI location = HateosResource.createTransactionUri(transactionNumber, uriInfo);
         asyncResponse.resume(Response.created(location).build());
     }

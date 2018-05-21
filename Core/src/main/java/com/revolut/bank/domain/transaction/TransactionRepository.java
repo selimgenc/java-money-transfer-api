@@ -6,5 +6,4 @@ import java.util.Optional;
 public interface TransactionRepository {
     Optional<Transaction> getTransactionById(String id);
     List<Transaction> getAll();
-    void store(Transaction transaction);
 }

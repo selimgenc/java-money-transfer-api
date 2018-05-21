@@ -1,6 +1,7 @@
 package com.revolut.bank.api.account;
 
 import com.revolut.bank.api.account.dto.AccountDto;
+import com.revolut.bank.api.account.dto.MovementDto;
 import com.revolut.bank.api.exception.ApiErrorMessage;
 import com.revolut.bank.api.exception.ApiException;
 import com.revolut.bank.api.util.ApiLogger;
@@ -13,7 +14,9 @@ import com.revolut.bank.domain.handling.DomainException;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.json.Json;
+import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
 import javax.ws.rs.*;
 import javax.ws.rs.container.AsyncResponse;
 import javax.ws.rs.container.Suspended;
@@ -44,8 +47,9 @@ public class AccountResource {
             throw new ApiException(new ApiErrorMessage("ERR-A-01", "The Required Account not found", null, Response.Status.NOT_FOUND));
         }
 
-        AccountDto accountDto = AccountDto.createFromAccount(optionalAccount.get());
-        asyncResponse.resume(Response.ok(accountDto).build());
+        AccountDto accountDto = AccountDto.buildFromAccountWithMovements(optionalAccount.get());
+
+        asyncResponse.resume(Response.ok(createJsonWithMovements(accountDto).toString()).build());
 
     }
 
@@ -59,7 +63,7 @@ public class AccountResource {
             return;
         }
         List<JsonObject> objects = accounts.stream()
-                .map(AccountDto::createFromAccount)
+                .map(AccountDto::buildFromAccount)
                 .map(dto -> createHateosJson(dto, uriInfo))
                 .collect(Collectors.toList());
 
@@ -74,24 +78,46 @@ public class AccountResource {
     public void createAccoount(@Suspended final AsyncResponse asyncResponse, AccountDto accountDto, @Context HttpHeaders headers) throws DomainException {
         MultivaluedMap<String, String> requestHeaders = headers.getRequestHeaders();
         String user = requestHeaders.getFirst("user");
-        String locaiton= requestHeaders.getFirst("location");
-
-        String newAccountNumber = accountService.createNewAccount(accountDto.getCustomer(), accountDto.getCredit(), user, locaiton);
+        String newAccountNumber = accountService.createNewAccount(accountDto.getCustomer(), accountDto.getCredit(), user);
         URI location = HateosResource.createAccountUri(newAccountNumber, uriInfo);
         asyncResponse.resume(Response.created(location).build());
 
     }
 
     private static JsonObject createHateosJson(AccountDto dto, UriInfo uriInfo){
-        return Json.createObjectBuilder()
-                .add("accountNumber", dto.getAccountNumber())
+        JsonObjectBuilder builder = Json.createObjectBuilder();
+        addAccount(builder, dto);
+        addHateos(builder, dto, uriInfo);
+        return builder.build();
+    }
+
+    private static JsonObject createJsonWithMovements(AccountDto dto){
+        JsonObjectBuilder builder = Json.createObjectBuilder();
+        addAccount(builder, dto);
+        addMovements(builder, dto);
+        return builder.build();
+    }
+
+
+    private static void addAccount(JsonObjectBuilder builder, AccountDto dto){
+        builder.add("accountNumber", dto.getAccountNumber())
                 .add("customer", dto.getCustomer())
-                .add("credit", dto.getCredit())
-                .add("_links", Json.createObjectBuilder()
+                .add("credit", dto.getCredit());
+    }
+
+    private static void addHateos(JsonObjectBuilder builder, AccountDto dto, UriInfo uriInfo){
+        builder.add("_links", Json.createObjectBuilder()
                         .add("Self", Json.createObjectBuilder()
                                 .add("href", HateosResource.createAccountUri(dto.getAccountNumber(), uriInfo).toString()))
-                )
-                .build();
+        );
+    }
+
+    private static void addMovements(JsonObjectBuilder builder,  AccountDto dto){
+        JsonArrayBuilder bm = Json.createArrayBuilder();
+        for (MovementDto movement : dto.getMovements()) {
+            bm.add(Json.createObjectBuilder().add("type", movement.getType()).add("amount", movement.getAmount()));
+        }
+        builder.add("movements", bm);
     }
 
 }

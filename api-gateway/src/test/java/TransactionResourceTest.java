@@ -1,15 +1,9 @@
 import com.revolut.bank.api.JaxrsApp;
-import com.revolut.bank.api.exception.ApiErrorMessage;
+import com.revolut.bank.api.account.dto.AccountDto;
 import com.revolut.bank.api.transaction.dto.TransactionDto;
-import com.revolut.bank.application.AccountService;
-import com.revolut.bank.application.internal.AccountServiceImpl;
-import com.revolut.bank.domain.account.Account;
-import com.revolut.bank.domain.account.AccountRepository;
 import com.revolut.bank.domain.handling.DomainException;
-import com.revolut.bank.infrustructure.persistance.AccountRepositoryInMem;
 import org.glassfish.jersey.test.JerseyTest;
 import org.junit.Assert;
-import org.junit.FixMethodOrder;
 import org.junit.Test;
 
 import javax.ws.rs.client.Entity;
@@ -21,26 +15,19 @@ import java.util.UUID;
 
 public class TransactionResourceTest extends JerseyTest {
     private static final String PATH= "transaction";
+    private static final String PATH_ACCOUNT= "account";
     private static final String V1 = "v1";
 
     @Test
     public void test_Successful_Transaction() throws DomainException {
         //Create Accounts
-        String accountNumber1= UUID.randomUUID().toString();
-        String accountNumber2= UUID.randomUUID().toString();
-
-        AccountRepositoryInMem accountRepository = new AccountRepositoryInMem();
-        accountRepository.store(new Account(accountNumber1, new BigDecimal(100), "slm"));
-        accountRepository.store(new Account(accountNumber2, new BigDecimal(100), "slm"));
+        AccountDto account1 = createAccountForTransfer("Selim", BigDecimal.valueOf(100));
+        AccountDto account2 = createAccountForTransfer("Melisa", BigDecimal.valueOf(200));
 
         //create Ttansfer object
-        TransactionDto transactionDto = new TransactionDto();
-        transactionDto.setAmount(BigDecimal.TEN);
-        transactionDto.setFrom(accountNumber1);
-        transactionDto.setTo(accountNumber2);
+        TransactionDto transactionDto = new TransactionDto(account1.getAccountNumber(), account2.getAccountNumber(), BigDecimal.TEN);
 
         Response response = target(V1).path(PATH).request()
-                .header("location","MOBILE")
                 .header("user","customer 1")
                 .header("clint","junit")
                 .post(Entity.entity(transactionDto, MediaType.APPLICATION_JSON_TYPE));
@@ -49,13 +36,10 @@ public class TransactionResourceTest extends JerseyTest {
 
         String transactionNumber = getTransactionNumberFromResponse(response);
 
-        transactionDto = target(V1).path(PATH).path(transactionNumber).request().get(TransactionDto.class);
-
-
-        Assert.assertEquals(transactionNumber, transactionDto.getTransactionNumber());
+        TransactionDto transactionDtoResponse = target(V1).path(PATH).path(transactionNumber).request().get(TransactionDto.class);
+        Assert.assertEquals(transactionNumber, transactionDtoResponse.getTransactionNumber());
 
     }
-
 
     @Test
     public void test_NonExisingTransaction_Should_Return_404(){
@@ -67,13 +51,8 @@ public class TransactionResourceTest extends JerseyTest {
 
     @Test
     public void test_NonExistingAccount_Should_Return_Internal_Error(){ //Test one domain exception
-        TransactionDto transactionDto = new TransactionDto();
-        transactionDto.setAmount(BigDecimal.TEN);
-        transactionDto.setFrom(UUID.randomUUID().toString());
-        transactionDto.setTo(UUID.randomUUID().toString());
-
+        TransactionDto transactionDto = new TransactionDto(UUID.randomUUID().toString(), UUID.randomUUID().toString(), BigDecimal.TEN);
         Response response = target(V1).path(PATH).request()
-                .header("location","MOBILE")
                 .header("user","owner from")
 
                 .post(Entity.entity(transactionDto, MediaType.APPLICATION_JSON_TYPE));
@@ -89,6 +68,23 @@ public class TransactionResourceTest extends JerseyTest {
         String[] split = accountLocation.split("/");
         return split[split.length - 1];
     }
+
+
+    private AccountDto createAccountForTransfer(String customer, BigDecimal credit){
+        AccountDto accountDto = new AccountDto(customer, credit);
+
+        Response response = target(V1).path(PATH_ACCOUNT).request()
+                .header("user", "by aa")
+                .header("clint", "junit")
+                .post(Entity.entity(accountDto, MediaType.APPLICATION_JSON_TYPE));
+
+        String accountLocation = response.getHeaderString("Location");
+        String[] split = accountLocation.split("/");
+        String accountNumber = split[split.length - 1];
+        accountDto.setAccountNumber(accountNumber);
+        return accountDto;
+    }
+
 
     @Override
     protected Application configure(){

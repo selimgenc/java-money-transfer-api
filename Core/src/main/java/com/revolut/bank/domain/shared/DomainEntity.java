@@ -1,8 +1,10 @@
 package com.revolut.bank.domain.shared;
 
-import javax.persistence.*;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+import javax.persistence.MappedSuperclass;
+import javax.persistence.Version;
 import java.io.Serializable;
-import java.util.Date;
 import java.util.Objects;
 
 @MappedSuperclass
@@ -11,13 +13,8 @@ public abstract class DomainEntity implements Serializable {
     @GeneratedValue
     private Long id;
 
-    @Temporal(TemporalType.TIMESTAMP)
-    private Date createTime;
-
-    private Boolean frozen = Boolean.FALSE;
-
-    private String createdBy;
-
+    @Version
+    private Integer version;
 
     @Override
     public boolean equals(Object o) {
@@ -32,35 +29,8 @@ public abstract class DomainEntity implements Serializable {
         return Objects.hash(id);
     }
 
-    public Long getId() {
-        return id;
+    public Integer getVersion() {
+        return version;
     }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public Date getCreateTime() {
-        return createTime;
-    }
-
-    public void setCreateTime(Date createTime) {
-        this.createTime = createTime;
-    }
-
-    public String getCreatedBy() {
-        return createdBy;
-    }
-
-    public void setCreatedBy(String createdBy) {
-        this.createdBy = createdBy;
-    }
-
-    public boolean isFrozen() {
-        return frozen;
-    }
-
-    public void setFrozen(boolean frozen) {
-        this.frozen = frozen;
-    }
 }

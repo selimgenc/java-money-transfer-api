@@ -15,7 +15,7 @@ public class AccountServiceTest extends ApplicationTestBase {
     @Test
     public void test_createAccount_Successfull() throws DomainException {
         AccountService accountService = injector.getInstance(AccountService.class);
-        String accountNo = accountService.createNewAccount("slmgnc", new BigDecimal(10), "dd", "Internet Bank");
+        String accountNo = accountService.createNewAccount("slmgnc", new BigDecimal(10), "dd");
 
         AccountRepository accountRepository = injector.getInstance(AccountRepository.class);
         Optional<Account> account = accountRepository.getByNo(accountNo);
@@ -31,7 +31,7 @@ public class AccountServiceTest extends ApplicationTestBase {
         exception.expectMessage("account.credit.wrong");
 
         AccountService accountService = injector.getInstance(AccountService.class);
-        accountService.createNewAccount("slmgnc", new BigDecimal(-5), "dd", "Internet Bank");
+        accountService.createNewAccount("slmgnc", new BigDecimal(-5), "dd");
     }
 
 }

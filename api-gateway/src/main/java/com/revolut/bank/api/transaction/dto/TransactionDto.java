@@ -2,7 +2,6 @@ package com.revolut.bank.api.transaction.dto;
 
 import com.revolut.bank.domain.transaction.Transaction;
 
-import javax.json.bind.annotation.JsonbPropertyOrder;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.Date;
@@ -13,15 +12,28 @@ public class TransactionDto implements Serializable {
     private String to;
     private BigDecimal amount;
     private Date time;
+    private String user;
+    private String location;
 
-    public static TransactionDto cretaFromEntity(Transaction transaction){
+    public static TransactionDto buildFromEntity(Transaction transaction){
         TransactionDto dto = new TransactionDto();
         dto.setTransactionNumber(transaction.getTransactionNo());
-        dto.setFrom(transaction.getFrom().getAccountNo());
-        dto.setTo(transaction.getTo().getAccountNo());
+        dto.setFrom(transaction.getFrom());
+        dto.setTo(transaction.getTo());
         dto.setAmount(transaction.getAmount());
         dto.setTime(transaction.getTime());
+        dto.setUser(transaction.getUser());
+        dto.setLocation(transaction.getLocation());
         return dto;
+    }
+
+    public TransactionDto(String from, String to, BigDecimal amount) {
+        this.from = from;
+        this.to = to;
+        this.amount = amount;
+    }
+
+    public TransactionDto() {
     }
 
     public String getFrom() {
@@ -62,5 +74,21 @@ public class TransactionDto implements Serializable {
 
     public void setTime(Date time) {
         this.time = time;
+    }
+
+    public String getUser() {
+        return user;
+    }
+
+    public void setUser(String user) {
+        this.user = user;
+    }
+
+    public String getLocation() {
+        return location;
+    }
+
+    public void setLocation(String location) {
+        this.location = location;
     }
 }

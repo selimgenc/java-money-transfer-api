@@ -24,12 +24,9 @@ public class AccountResourceTest extends JerseyTest {
 
     @Test
     public void testCreateAccount_Created(){
-        AccountDto accountDto = new AccountDto();
-        accountDto.setCustomer("slmgenc");
-        accountDto.setCredit(new BigDecimal(50));
+        AccountDto accountDto = new AccountDto("slmgnec", BigDecimal.valueOf(50));
 
         Response response = target(V1).path(PATH).request()
-                .header("location","MOBILE")
                 .header("user","by aa")
                 .header("clint","junit")
                 .post(Entity.entity(accountDto, MediaType.APPLICATION_JSON_TYPE));
